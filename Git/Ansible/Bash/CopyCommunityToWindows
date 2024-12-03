@@ -1,0 +1,83 @@
+#!/bin/bash
+#Script to copy modules from comunnity.windows to ansible.windows.
+#created by Hen Yaish and Shahar Golshani.
+
+#Prerequisites
+#1. pip install git-filter-repo 
+#2. Add community.windows as a remote:
+#   a. cd ./ansible.windows
+#   b. git remote add source-repo ../community.windows/
+#3. Verify Forks are synced.
+#4. Run this script from community.windows main folder.
+#5. Verify the directory in the script match your working env .
+
+#Exit on error
+set -e
+
+#Function to display usage
+function usage() {
+    echo "Usage: $0 <module-name>"
+    echo "Please Add the module name you want to migrate."
+    echo "This script will copy the Module, Documentation and tests files from comunnity.windows to ansible.windows, Including thier log history."
+    exit 1
+}
+
+# Check for correct number of arguments
+if [ "$#" -ne 1 ]; then
+    usage
+fi
+
+# Assign arguments to variables
+module_name="$1"
+module="$1.ps1"
+module_doc="$1.py"
+module_location="plugins/modules"
+test_location="tests/integration/targets/$module_name"
+
+#Test if files exists
+if [ ! -f "$module_location/$module" ]; then
+    echo "Error: Module PS file '$module_location/$module' does not exist"
+    echo "Exit on error"
+    exit 1
+fi
+
+if [ ! -f "$module_location/$module_doc" ]; then
+    echo "Error: Module documentation PY file '$module_location/$module_doc' does not exist"
+    echo "Exit on error"
+    exit 1
+fi
+
+if [ ! -d "$test_location" ]; then
+    echo "Error: Test folder '$test_location' does not exist"
+    echo "Exit on error"
+    exit 1
+fi
+
+#Creating source branch and filtering files and history
+git checkout main
+git checkout -b  source-history
+git filter-repo --path plugins/modules/$module --path plugins/modules/$module_doc --path $test_location --refs refs/heads/source-history --force
+git log --oneline
+
+#Creating target branch, fetch and merg history and files.
+cd ../windows
+git checkout main
+git checkout -b migrate-$module_name
+git branch -a
+git fetch source-repo
+git branch source-branch remotes/source-repo/source-history
+git merge source-branch -m "Migrating $1 files with history" --allow-unrelated-histories
+git log --oneline
+
+#cleanup - Deleting temp branches.
+git branch -d source-branch
+git branch -a
+cd ../community/
+git checkout main
+git branch -a
+git branch -D source-history
+git branch -a
+
+echo "Done"
+
+
