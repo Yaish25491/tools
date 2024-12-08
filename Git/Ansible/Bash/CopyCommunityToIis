@@ -5,11 +5,12 @@
 #Prerequisites
 #1. pip install git-filter-repo 
 #2. Add community.windows as a remote:
-#   a. cd ./ansible.windows
-#   b. git remote add source-repo ../community.windows/
+#   a. cd ./microsoft.iis
+#   b. git remote add source-repo ../community/
 #3. Verify Forks are synced.
 #4. Run this script from community.windows main folder.
-#5. Verify the directory in the script match your working env.
+#5. Verify the directory in the script match your working env .
+
 #Exit on error
 set -e
 
@@ -52,23 +53,55 @@ if [ ! -d "$test_location" ]; then
     exit 1
 fi
 
+# Function to check the status of the repository
+check_git_status() {
+  # Get the output of `git status --porcelain`
+  git_status=$(git status --porcelain)
+
+  if [[ -n "$git_status" ]]; then
+    echo "Your repository has uncommitted or untracked changes:"
+    echo "$git_status"
+    echo "Please commit or stash your changes before proceeding."
+    exit 1
+  else
+    echo "Repository is clean. Continuing..."
+  fi
+}
+#Check everything is fine
+check_git_status
+cd ../microsoft.iis
+check_git_status
+cd ../community
+
 #Creating source branch and filtering files and history
+echo "*** Creating source branch, filtering files and history ***"
+
 git checkout main
+git remote update origin
+git branch -D source-history &>/dev/null || true
 git checkout -b  source-history
+git reset origin/main
 git filter-repo --path plugins/modules/$module --path plugins/modules/$module_doc --path $test_location --refs refs/heads/source-history --force
 git log --oneline
 
 #Creating target branch, fetch and merg history and files.
+echo "*** Creating target branch, fetch and merg history and files. ***"
+
 cd ../microsoft.iis
+
+git remote update origin
 git checkout main
+git branch -D migrate-$module_name &>/dev/null || true
 git checkout -b migrate-$module_name
+git reset --hard origin/main
 git branch -a
 git fetch source-repo
 git branch source-branch remotes/source-repo/source-history
 git merge source-branch -m "Migrating $1 files with history" --allow-unrelated-histories
-git log --oneline
 
 #cleanup - Deleting temp branches.
+echo "*** cleanup - Deleting temp branches. ***"
+
 git branch -d source-branch
 git branch -a
 cd ../community/
@@ -78,5 +111,3 @@ git branch -D source-history
 git branch -a
 
 echo "Done"
-
-
