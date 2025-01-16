@@ -69,9 +69,9 @@ check_git_status() {
 }
 #Check everything is fine
 check_git_status
-cd ../windows
+cd ../../ansible/windows
 check_git_status
-cd ../community
+cd ../../community/windows
 
 #Creating source branch and filtering files and history
 echo "*** Creating source branch, filtering files and history ***"
@@ -87,7 +87,7 @@ git log --oneline
 #Creating target branch, fetch and merg history and files.
 echo "*** Creating target branch, fetch and merg history and files. ***"
 
-cd ../windows
+cd ../../ansible/windows
 
 git remote update origin
 git checkout main
@@ -104,7 +104,7 @@ echo "*** cleanup - Deleting temp branches. ***"
 
 git branch -d source-branch
 git branch -a
-cd ../community/
+cd ../../community/windows
 git checkout main
 git branch -a
 git branch -D source-history

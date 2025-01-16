@@ -69,9 +69,9 @@ check_git_status() {
 }
 #Check everything is fine
 check_git_status
-cd ../microsoft.iis
+cd ../ansible/iis
 check_git_status
-cd ../community
+cd ../community/windwos
 
 #Creating source branch and filtering files and history
 echo "*** Creating source branch, filtering files and history ***"
@@ -104,7 +104,7 @@ echo "*** cleanup - Deleting temp branches. ***"
 
 git branch -d source-branch
 git branch -a
-cd ../community/
+cd ../community/windows
 git checkout main
 git branch -a
 git branch -D source-history
